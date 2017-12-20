@@ -499,4 +499,11 @@ public class TestDownloadService {
         assertEquals("nxfile/default/1234/file:content/foo.txt", url);
     }
 
+    @Test
+    public void testDownloadUrlWithJSessionIDSanitization() throws IOException {
+        String filename = "/home/john/foo.txt;jsessionid=FooBarBaz";
+        String url = downloadService.getDownloadUrl("default", "1234", "file:content", filename);
+        assertEquals("nxfile/default/1234/file:content/foo.txt", url);
+    }
+
 }
