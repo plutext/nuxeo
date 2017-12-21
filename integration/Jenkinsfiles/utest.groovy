@@ -17,6 +17,9 @@
  *     jcarsique
  */
 
+@Library('nuxeo@feature-NXP-23885-compose-and-github-statuses')
+import org.nuxeo.ci.jenkins.pipeline.Commons
+
 currentBuild.setDescription("Branch: $BRANCH -> $PARENT_BRANCH, DB: $DBPROFILE, VERSION: $DBVERSION")
 
 node('SLAVE') {
@@ -25,7 +28,6 @@ node('SLAVE') {
     tool name: 'maven-3', type: 'hudson.tasks.Maven$MavenInstallation'
     timeout(time: 3, unit: 'HOURS') {
         timestamps {
-            def shared
             def sha
             stage('clone') {
                 checkout(
@@ -44,22 +46,21 @@ node('SLAVE') {
                 sh """#!/bin/bash -xe
                       ./clone.py $BRANCH -f $PARENT_BRANCH
                 """
-                shared = load("$WORKSPACE/integration/Jenkinsfiles/shared.groovy")
                 sha = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
             }
 
             try {
                 stage('tests') {
-                    shared.withBuildStatus("$DBPROFILE-$DBVERSION/utest", 'https://github.com/nuxeo/nuxeo', sha) {
-                        shared.withDockerCompose("$JOB_NAME-$BUILD_NUMBER", "integration/Jenkinsfiles/docker-compose-$DBPROFILE-${DBVERSION}.yml", "mvn -B -f $WORKSPACE/pom.xml install -Pqa,addons,customdb,$DBPROFILE -Dmaven.test.failure.ignore=true -Dnuxeo.tests.random.mode=STRICT") {
+                    withBuildStatus("$DBPROFILE-$DBVERSION/utest", 'https://github.com/nuxeo/nuxeo', sha) {
+                        withDockerCompose("$JOB_NAME-$BUILD_NUMBER", "integration/Jenkinsfiles/docker-compose-$DBPROFILE-${DBVERSION}.yml", "mvn -B -f $WORKSPACE/pom.xml install -Pqa,addons,customdb,$DBPROFILE -Dmaven.test.failure.ignore=true -Dnuxeo.tests.random.mode=STRICT") {
                             archive '**/target/failsafe-reports/*, **/target/*.png, **/target/**/*.log, **/target/**/log/*'
                             junit '**/target/surefire-reports/*.xml, **/target/failsafe-reports/*.xml, **/target/failsafe-reports/**/*.xml'
                         }
                     }
                 }
             } finally {
-                shared.warningsPublisher()
-                shared.claimPublisher()
+                warningsPublisher()
+                claimPublisher()
             }
         }
     }
