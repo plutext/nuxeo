@@ -266,15 +266,10 @@ public class SuggestDirectoryEntries {
         private void mergeJsonAdapter(JSONAdapter branch) {
             JSONAdapter found = children.get(branch.getId());
             if (found != null) {
-                // I already have the given the adapter as child, let's merge
-                // all its children.
                 for (JSONAdapter branchChild : branch.children.values()) {
                     found.mergeJsonAdapter(branchChild);
                 }
             } else {
-                // First time I see this adapter, I adopt it.
-                // We use label as key, this way display will be alphabetically
-                // sorted
                 children.put(branch.getId(), branch);
             }
         }
